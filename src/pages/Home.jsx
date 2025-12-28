@@ -139,11 +139,11 @@ const Home = () => {
           </div>
           
           <h1 className="text-6xl md:text-[110px] font-black leading-none tracking-tighter mb-8 drop-shadow-2xl text-white">
-            SHADOW FundMe<span className="text-cyan-500">.</span>
+            Raise3<span className="text-cyan-500">.</span>
           </h1>
           
           <p className="text-slate-400 text-lg md:text-2xl max-w-2xl mx-auto mb-14 leading-relaxed font-medium">
-            The next generation of decentralized crowdfunding. Secure, transparent, and built entirely on-chain.
+          Fund ideas without intermediaries. Secure, transparent, and fully on-chain.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
@@ -256,8 +256,8 @@ const Home = () => {
       <footer className="bg-black border-t border-white/5 py-24 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-center md:text-left">
             <div>
-              <h2 className="text-3xl font-black tracking-tighter uppercase text-white mb-2">SHADOW FundMe <span className="text-cyan-500">.</span></h2>
-              <p className="text-slate-700 text-[10px] font-bold uppercase tracking-widest">© 2025 Shadow Protocol • Built on Sepolia</p>
+              <h2 className="text-3xl font-black tracking-tighter uppercase text-white mb-2">Raise3 <span className="text-cyan-500">.</span></h2>
+              <p className="text-slate-700 text-[10px] font-bold uppercase tracking-widest">© 2025 Raise3 Protocol • Built on Sepolia</p>
             </div>
 
             {/* X Handle Section */}

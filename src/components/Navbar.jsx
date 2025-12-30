@@ -1,9 +1,15 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+// Changed from @reown/appkit to @rainbow-me/rainbowkit
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useAccount, useDisconnect } from "wagmi";
 
 const Navbar = () => {
-  const [account, setAccount] = useState("");
+  const { openConnectModal } = useConnectModal(); // RainbowKit hook
+  const { address, isConnected } = useAccount(); 
+  const { disconnect } = useDisconnect(); 
+  
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -18,52 +24,24 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const checkIfWalletIsConnected = async () => {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({
-            method: "eth_accounts",
-          });
-          if (accounts.length > 0) {
-            setAccount(accounts[0]);
-          }
-        } catch (error) {
-          console.error("Error checking connection", error);
-        }
-      }
-    };
-    checkIfWalletIsConnected();
+  const formatAddress = (addr) =>
+    addr ? `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}` : "";
 
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        setAccount(accounts[0] || "");
-      });
-    }
-  }, []);
-
-  const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        setAccount(accounts[0]);
-      } catch (error) {
-        console.error("User denied account access", error);
-      }
+  const handleWalletAction = () => {
+    if (isConnected) {
+      setShowDropdown(!showDropdown);
     } else {
-      alert("Please install MetaMask!");
+      // Trigger the RainbowKit modal
+      if (openConnectModal) {
+        openConnectModal();
+      }
     }
   };
 
-  const disconnectWallet = () => {
-    setAccount("");
+  const handleDisconnect = () => {
+    disconnect();
     setShowDropdown(false);
   };
-
-  const formatAddress = (addr) =>
-    `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-[#020408]/80 backdrop-blur-xl border-b border-white/5 font-sans">
@@ -91,17 +69,17 @@ const Navbar = () => {
           {/* Wallet Section */}
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={account ? () => setShowDropdown(!showDropdown) : connectWallet}
+              onClick={handleWalletAction}
               className={`px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all duration-300 border-2 flex items-center gap-3 ${
-                account
+                isConnected
                   ? "bg-transparent border-cyan-500/50 text-cyan-500 hover:border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.1)]"
                   : "bg-white border-white text-black hover:bg-cyan-500 hover:border-cyan-500 shadow-xl"
               }`}
             >
-              {account ? (
+              {isConnected ? (
                 <>
                   <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
-                  {formatAddress(account)}
+                  {formatAddress(address)}
                   <svg
                     className={`w-3 h-3 transition-transform ${
                       showDropdown ? "rotate-180" : ""
@@ -124,10 +102,10 @@ const Navbar = () => {
             </button>
 
             {/* Disconnect Dropdown */}
-            {showDropdown && account && (
+            {showDropdown && isConnected && (
               <div className="absolute right-0 mt-4 w-48 bg-[#0a0c12] border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2">
                 <button
-                  onClick={disconnectWallet}
+                  onClick={handleDisconnect}
                   className="w-full px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-colors flex items-center justify-between"
                 >
                   Disconnect

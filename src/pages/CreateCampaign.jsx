@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import FundMeMultiABI from '../constants/FundMeMultiAbi.json';
 
-const CONTRACT_ADDRESS = "0x468c183692592816C601BDd6c4b7D970892FF422";
+const CONTRACT_ADDRESS = "0xB1a316775eadfb4795a053B29567c21330CDb3fa";
 const SEPOLIA_PRICEFEED = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
 
 const CreateCampaign = () => {

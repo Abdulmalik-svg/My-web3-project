@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
 
 // Your live contract on Sepolia
-const CONTRACT_ADDRESS = "0xaEca09531191Db60959f9cEB0f46111C04b6dC41";
+const CONTRACT_ADDRESS = "0xB1a316775eadfb4795a053B29567c21330CDb3fa";
 
 const CONTRACT_ABI = [
   "function getCampaignCount() external view returns (uint256)",

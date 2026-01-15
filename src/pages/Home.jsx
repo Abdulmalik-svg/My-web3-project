@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
 import FundMeMultiABI from './FundMeMultiABI.json';
 
-const CONTRACT_ADDRESS = "0x468c183692592816C601BDd6c4b7D970892FF422";
+const CONTRACT_ADDRESS = "0xB1a316775eadfb4795a053B29567c21330CDb3fa";
 const PLATFORM_FEE_PERCENT = 10;
 
 const Home = () => {
@@ -214,3 +214,4 @@ const Home = () => {
 };
 
 export default Home;
+       

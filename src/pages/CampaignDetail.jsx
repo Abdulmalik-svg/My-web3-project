@@ -39,8 +39,11 @@ const CampaignDetail = () => {
       const userAccount = await signer.getAddress();
       setAccount(userAccount);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, FundMeMultiABI, provider);
+      
       const camp = await contract.getCampaign(id);
-      const [creator, title, description, image, goal, pledged, deadline, completed] = camp;
+      
+      // DESTRUCTURING UPDATED: Added withdrawn and priceFeed
+      const [creator, title, description, image, goal, pledged, deadline, withdrawn, priceFeed] = camp;
 
       setCampaign({
         id: Number(id),
@@ -51,7 +54,7 @@ const CampaignDetail = () => {
         goal: ethers.formatEther(goal),
         pledged: ethers.formatEther(pledged),
         deadline: Number(deadline),
-        completed,
+        completed: withdrawn, // Mapping 'withdrawn' to your UI 'completed' state
         progress: Number(goal) > 0 ? (Number(pledged) * 100 / Number(goal)) : 0,
         isCreator: userAccount.toLowerCase() === creator.toLowerCase()
       });
@@ -97,23 +100,35 @@ const CampaignDetail = () => {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, FundMeMultiABI, signer);
 
       const tx = await contract.withdraw(id);
-      await tx.wait();
+      const receipt = await tx.wait();
+
+      // PARSE LOGS TO FIND THE WITHDRAWN EVENT
+      const event = receipt.logs
+        .map((log) => {
+          try { return contract.interface.parseLog(log); } catch (e) { return null; }
+        })
+        .find((e) => e && e.name === 'Withdrawn');
+
+      if (event) {
+        const creatorAmt = ethers.formatEther(event.args.creatorAmount);
+        const feeAmt = ethers.formatEther(event.args.fee);
+        
+        triggerModal(
+          'CAPITAL WITHDRAWN', 
+          `Protocol success. ${creatorAmt} ETH routed to your wallet. Protocol fee of ${feeAmt} ETH sent to recipient.`, 
+          'success'
+        );
+      } else {
+        triggerModal('CAPITAL WITHDRAWN', 'Funds have been successfully routed.', 'success');
+      }
+
       fetchCampaign();
-      triggerModal('CAPITAL WITHDRAWN', 'The campaign funds have been successfully routed to your wallet.', 'success');
     } catch (error) {
       console.error('Withdrawal error:', error);
-      triggerModal('ACCESS DENIED', 'Only the campaign creator can withdraw capital.', 'error');
+      triggerModal('ACCESS DENIED', 'Withdrawal conditions not met or authority rejected.', 'error');
     } finally {
       setFunding(false);
     }
-  };
-
-  const formatTimeLeft = (deadline) => {
-    const now = Math.floor(Date.now() / 1000);
-    const timeLeft = deadline - now;
-    if (timeLeft <= 0) return 'Expired';
-    const days = Math.floor(timeLeft / 86400);
-    return days > 0 ? `${days}D Remaining` : 'Ends Today';
   };
 
   if (loading) return (
@@ -206,8 +221,7 @@ const CampaignDetail = () => {
                   Protocol Advisory
                 </p>
                 <p className="text-slate-400 text-[11px] font-medium leading-relaxed">
-                  This system is live on <span className="text-white">Sepolia Testnet</span>. Only use test tokens. Need funds? 
-                  <a href="https://sepolia-faucet.pk910.de/" target="_blank" rel="noreferrer" className="text-cyan-500 underline ml-1 hover:text-white transition-colors">Request Test ETH</a>
+                  This system is live on <span className="text-white">Sepolia Testnet</span>. Only use test tokens.
                 </p>
               </div>
 
@@ -264,6 +278,7 @@ const CampaignDetail = () => {
               ) : (
                 <div className="py-10 border-2 border-dashed border-white/10 rounded-3xl text-center">
                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Protocol Finalized</p>
+                   <p className="text-cyan-500 text-[10px] font-black uppercase tracking-widest mt-2">Capital Withdrawn</p>
                 </div>
               )}
 
@@ -276,7 +291,7 @@ const CampaignDetail = () => {
                     disabled={funding}
                     className="w-full py-5 bg-transparent border-2 border-purple-500/50 text-purple-400 hover:bg-purple-500/10 font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all"
                   >
-                    Withdraw Capital
+                    {funding ? 'Processing...' : 'Withdraw Capital'}
                   </button>
                 </div>
               )}

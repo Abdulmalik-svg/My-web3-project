@@ -17,7 +17,7 @@ import CampaignDetail from './pages/CampaignDetail';
 // 2. Configure Wagmi & RainbowKit
 const config = getDefaultConfig({
   appName: 'Raise3',
-  projectId: 'YOUR_PROJECT_ID', // Replace with your ID from https://cloud.reown.com
+  projectId: 'da58b26d76753c05bd243e4f6134fcf0', // Replace with your ID from https://cloud.reown.com
   chains: [mainnet, sepolia, base],
   ssr: false, 
 });

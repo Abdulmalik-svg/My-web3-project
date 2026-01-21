@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 
 // --- CONFIGURATION ---
 // Your verified contract on Sepolia
-const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0xB1a316775eadfb4795a053B29567c21330CDb3fa";
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x0EFAB53C9D8e713A4E40e4CcB6784de183553Bb6";
 
 // ABI import (make sure this file exists and is correct!)
 import FundMeMultiAbi from "../constants/FundMeMultiAbi.json";

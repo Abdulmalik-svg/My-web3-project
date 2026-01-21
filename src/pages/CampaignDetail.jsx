@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
 import FundMeMultiABI from './FundMeMultiABI.json';
 
-const CONTRACT_ADDRESS = "0xB1a316775eadfb4795a053B29567c21330CDb3fa";
+const CONTRACT_ADDRESS = "0x0EFAB53C9D8e713A4E40e4CcB6784de183553Bb6";
 
 const CampaignDetail = () => {
   const { id } = useParams();

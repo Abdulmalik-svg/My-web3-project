@@ -1,282 +1,252 @@
-// src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FUNDME_ADDRESS, FUNDME_ABI } from '../constants/contract';
-
-const PLATFORM_FEE_PERCENT = 10;
 
 const Home = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
   const [totalEthRaised, setTotalEthRaised] = useState("0");
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const switchToSepolia = async () => {
-    if (!window.ethereum) return;
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0xaa36a7' }],
-      });
-    } catch (err) {
-      if (err.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0xaa36a7',
-            chainName: 'Sepolia Test Network',
-            rpcUrls: ['https://rpc.sepolia.org'],
-            nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
-            blockExplorerUrls: ['https://sepolia.etherscan.io'],
-          }],
-        });
-      }
-    }
+  useEffect(() => {
+    const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Window Scroll Function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
 
   const fetchCampaigns = async () => {
     try {
       if (!window.ethereum) return setLoading(false);
-
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-
-      // Ensure we are on Sepolia (Chain ID 11155111)
       if (network.chainId !== 11155111n) {
         setNetworkError(true);
         setLoading(false);
         return;
       }
-
-      // Check if code exists at address
-      const bytecode = await provider.getCode(FUNDME_ADDRESS);
-      if (bytecode === "0x") {
-        console.error("Contract not deployed at this address on Sepolia");
-        setLoading(false);
-        return;
-      }
-
-      setNetworkError(false);
       const contract = new ethers.Contract(FUNDME_ADDRESS, FUNDME_ABI, provider);
-      
-      // FIX 1: campaignCount (matches ABI exactly)
       const countBigInt = await contract.campaignCount(); 
       const count = Number(countBigInt);
-
       let runningTotal = 0n;
       const campaignsArray = [];
 
       for (let i = 1; i <= count; i++) {
         const camp = await contract.getCampaign(i);
-        
-        // FIX 2: Destructure all 9 items from your ABI output
-        // creator, title, description, image, goal, pledged, deadline, withdrawn, priceFeed
-        const [
-          creator, 
-          title, 
-          description, 
-          image, 
-          goal, 
-          pledged, 
-          deadline, 
-          withdrawn
-        ] = camp;
-
+        const [creator, title, description, image, goal, pledged, deadline, withdrawn] = camp;
         runningTotal += pledged;
-
-        // Display campaigns that haven't been withdrawn yet
         if (!withdrawn) {
           campaignsArray.push({
             id: i,
             title,
             description,
-            image: image || "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=800",
+            image: image || "https://images.unsplash.com/photo-1639762681485-074b7f938ba0",
             goal: ethers.formatEther(goal),
             pledged: ethers.formatEther(pledged),
             deadline: Number(deadline),
-            // Progress calculation using BigInt for precision
             progress: goal > 0n ? Number((pledged * 100n) / goal) : 0,
           });
         }
       }
-
       setTotalEthRaised(ethers.formatEther(runningTotal));
-      // Show newest campaigns first
       setCampaigns(campaignsArray.reverse());
-    } catch (err) {
-      console.error("Home fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   useEffect(() => {
     fetchCampaigns();
-    
     if (window.ethereum) {
       window.ethereum.on('chainChanged', () => window.location.reload());
       window.ethereum.on('accountsChanged', () => fetchCampaigns());
     }
-
-    return () => {
-      if (window.ethereum?.removeListener) {
-        window.ethereum.removeListener('chainChanged', () => {});
-      }
-    };
   }, []);
 
   const formatTimeLeft = (deadline) => {
     const now = Math.floor(Date.now() / 1000);
     const diff = deadline - now;
-    if (diff <= 0) return "Expired";
+    if (diff <= 0) return "FINISHED";
     const days = Math.floor(diff / 86400);
-    return days > 0 ? `${days}d left` : "Ends Today";
+    return days > 0 ? `${days} DAYS REMAINING` : "ENDING SOON";
   };
 
   return (
-    <div className="bg-[#020408] min-h-screen text-white font-sans selection:bg-cyan-500/30">
-      {/* Background Ambient Glows */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[600px] opacity-20 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 via-transparent to-purple-500/20 blur-[120px]"></div>
+    <div className="bg-[#050505] min-h-screen text-[#F5F5F5] font-sans selection:bg-emerald-500 selection:text-black">
+      
+      {/* --- ADVANCED BACKGROUND MESH --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <motion.div 
+          className="absolute w-[800px] h-[800px] rounded-full bg-emerald-600/10 blur-[160px]"
+          animate={{ x: mousePos.x - 400, y: mousePos.y - 400 }}
+          transition={{ type: "spring", damping: 50, stiffness: 100 }}
+        />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       </div>
 
       <div className="relative z-10">
-        {/* HERO SECTION */}
-        <section className="pt-32 pb-28 text-center px-6">
-          <h1 className="text-6xl md:text-[110px] font-black tracking-tighter mb-6 uppercase">
-            Raise3<span className="text-cyan-500">.</span>
-          </h1>
-
-          <p className="text-slate-400 max-w-xl mx-auto mb-10 text-lg">
-            Decentralized funding protocol. Transparent, secure, and powered by Sepolia.
-          </p>
-
-          <div className="flex flex-col md:flex-row justify-center items-center gap-6">
-            <Link to="/create" className="w-full md:w-auto px-12 py-6 bg-cyan-500 text-black font-black rounded-3xl hover:bg-white transition-all shadow-xl shadow-cyan-500/10 uppercase tracking-widest text-sm">
-              Launch Project
-            </Link>
-            <button
-              onClick={() => document.getElementById('marketplace').scrollIntoView({ behavior: 'smooth' })}
-              className="w-full md:w-auto px-12 py-6 border border-white/10 rounded-3xl font-black hover:bg-white/5 transition-all uppercase tracking-widest text-sm"
+        
+        {/* --- HERO SECTION --- */}
+        <section className="pt-32 pb-20 px-6 md:px-12 max-w-[1400px] mx-auto">
+          <div className="text-center space-y-8">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-block px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-md"
             >
-              Explore Projects
-            </button>
-          </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400">
+                Institutional Grade Crowdfunding
+              </span>
+            </motion.div>
 
-          <p className="mt-12 text-slate-600 text-[10px] uppercase tracking-[0.3em] font-bold">
-            Transparent {PLATFORM_FEE_PERCENT}% fee • fully on-chain
-          </p>
-        </section>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-7xl md:text-[10rem] font-black tracking-tighter leading-none uppercase italic"
+            >
+              RAISE<span className="text-emerald-500">3</span>
+            </motion.h1>
 
-        {/* STATISTICS */}
-        <section className="max-w-7xl mx-auto px-6 pb-20">
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="md:col-span-2 bg-white/[0.02] p-12 rounded-[3.5rem] border border-white/5 backdrop-blur-sm">
-              <p className="text-slate-500 uppercase text-[10px] font-black tracking-widest mb-6">
-                Total Protocol Volume
-              </p>
-              <h3 className="text-5xl md:text-7xl font-black tracking-tighter">
-                {parseFloat(totalEthRaised).toFixed(4)} <span className="text-cyan-500">ETH</span>
-              </h3>
-            </div>
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-slate-400 text-xl md:text-2xl max-w-2xl mx-auto font-light leading-relaxed"
+            >
+              The definitive decentralized funding engine. Deploy capital, track progress, and build the future on <span className="text-white font-medium italic underline decoration-emerald-500/50">Sepolia</span>.
+            </motion.p>
 
-            <div className="bg-white/[0.02] p-10 rounded-[3.5rem] border border-white/5 text-center flex flex-col justify-center">
-              <p className="text-5xl font-black text-purple-500 mb-2">
-                {campaigns.length}
-              </p>
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                Active Projects
-              </p>
-            </div>
-
-            <div className="bg-cyan-500 p-10 rounded-[3.5rem] text-center text-black flex flex-col justify-center shadow-lg shadow-cyan-500/10">
-              <p className="text-5xl font-black mb-2">
-                {PLATFORM_FEE_PERCENT}%
-              </p>
-              <p className="text-[10px] uppercase tracking-widest font-black">
-                Protocol Fee
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* CAMPAIGN GRID */}
-        <section id="marketplace" className="max-w-7xl mx-auto px-6 pb-32">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-            <div>
-              <h2 className="text-4xl font-black uppercase tracking-tighter">Live Projects</h2>
-              <p className="text-slate-500 text-sm">Real-time ledger updates</p>
-            </div>
-            {networkError && (
-              <button
-                onClick={switchToSepolia}
-                className="px-6 py-3 bg-red-500/10 border border-red-500/40 rounded-xl text-red-500 uppercase text-[10px] font-black tracking-widest animate-pulse"
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-col sm:flex-row justify-center gap-6 pt-6"
+            >
+              <Link to="/create" className="px-12 py-5 bg-emerald-500 text-black font-black uppercase tracking-widest text-xs rounded-full hover:bg-emerald-400 transition-all hover:shadow-[0_0_40px_rgba(16,185,129,0.4)]">
+                Launch Project
+              </Link>
+              <button 
+                onClick={() => document.getElementById('market').scrollIntoView({ behavior: 'smooth' })} 
+                className="px-12 py-5 border border-white/10 text-white font-black uppercase tracking-widest text-xs rounded-full hover:bg-white/5 transition-all"
               >
-                Switch to Sepolia
+                View Marketplace
               </button>
-            )}
+            </motion.div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-1 mt-32 border border-white/5 bg-white/5 p-1 rounded-[3rem] overflow-hidden backdrop-blur-sm">
+            {[
+              { label: 'Total Value Locked', val: `${parseFloat(totalEthRaised).toFixed(3)} ETH`, sub: 'Real-time Chain Data' },
+              { label: 'Active Deployments', val: campaigns.length, sub: 'Verified Smart Contracts' },
+              { label: 'Network Integrity', val: '99.9%', sub: 'Sepolia Testnet v4' }
+            ].map((stat, i) => (
+              <div key={i} className="bg-[#0A0A0A] p-10 hover:bg-[#0F0F0F] transition-colors">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">{stat.label}</p>
+                <h3 className="text-4xl font-black italic mb-2 tracking-tight text-emerald-500">{stat.val}</h3>
+                <p className="text-xs text-slate-600 font-medium">{stat.sub}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* --- CAMPAIGN LISTINGS --- */}
+        <section id="market" className="px-6 md:px-12 py-32 max-w-[1400px] mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-6">
+            <h2 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter">
+              Active <span className="text-emerald-500">Market</span>
+            </h2>
+            <div className="h-[1px] flex-grow bg-white/10 mx-10 hidden md:block mb-5"></div>
+            <div className="flex gap-4">
+               <div className="px-5 py-2 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                 {campaigns.length} Pools Live
+               </div>
+            </div>
           </div>
 
           {loading ? (
-            <div className="py-20 text-center">
-              <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-slate-500 uppercase text-[10px] font-black tracking-widest tracking-[0.2em]">Syncing Blockchain...</p>
-            </div>
-          ) : campaigns.length === 0 ? (
-            <div className="py-20 border-2 border-dashed border-white/5 rounded-[4rem] text-center">
-              <p className="text-slate-500 uppercase text-[10px] font-black tracking-widest">No active campaigns found</p>
-              <Link to="/create" className="text-cyan-500 text-xs font-bold mt-4 block underline">Be the first to create one</Link>
-            </div>
+            <div className="py-32 text-center text-emerald-500 font-black animate-pulse tracking-[1.5em] text-xs">SYNCHRONIZING_BLOCKS...</div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-8">
-              {campaigns.map(c => (
-                <div key={c.id} className="group bg-[#0a0c12] border border-white/5 rounded-[3.5rem] overflow-hidden hover:border-cyan-500/30 transition-all duration-500">
-                  <div className="relative h-64 overflow-hidden">
-                    <img src={c.image} alt={c.title} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute top-6 left-6 px-4 py-2 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10">
-                      <p className="text-[10px] font-black uppercase text-cyan-400 tracking-widest">
-                        {formatTimeLeft(c.deadline)}
-                      </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+              {campaigns.map((c, idx) => (
+                <motion.div 
+                  key={c.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                  className="group relative"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-[#111] border border-white/5 transition-all duration-500 group-hover:border-emerald-500/40">
+                    <img src={c.image} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 grayscale-[50%] group-hover:grayscale-0" alt="" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="px-3 py-1 bg-emerald-500 text-black text-[9px] font-black rounded-full uppercase tracking-tighter">
+                            {formatTimeLeft(c.deadline)}
+                          </span>
+                          <span className="text-[10px] font-mono text-white/40 tracking-widest uppercase">ID_{c.id}</span>
+                        </div>
+                        <h3 className="text-3xl font-black uppercase italic leading-none tracking-tighter group-hover:text-emerald-400 transition-colors">{c.title}</h3>
+                        <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-6">
+                          <div>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Pledged</p>
+                            <p className="text-xl font-black italic">{parseFloat(c.pledged).toFixed(2)} ETH</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Target</p>
+                            <p className="text-xl font-black italic text-white/30">{c.goal} ETH</p>
+                          </div>
+                        </div>
+                        <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div initial={{ width: 0 }} whileInView={{ width: `${Math.min(c.progress, 100)}%` }} transition={{ duration: 1.2, ease: "circOut" }} className="absolute h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]" />
+                        </div>
+                        <Link to={`/campaign/${c.id}`} className="block w-full text-center py-4 bg-[#F5F5F5] text-black font-black uppercase text-[10px] tracking-widest rounded-2xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 hover:bg-emerald-500">View Contract</Link>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="p-10">
-                    <h3 className="font-black text-2xl mb-3 uppercase tracking-tight line-clamp-1">{c.title}</h3>
-                    <p className="text-slate-500 text-sm mb-8 line-clamp-2 min-h-[2.5rem]">{c.description}</p>
-
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-end">
-                        <div className="space-y-1">
-                          <p className="text-[10px] uppercase text-slate-500 font-black tracking-widest">Raised</p>
-                          <p className="text-xl font-black">{parseFloat(c.pledged).toFixed(3)} ETH</p>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <p className="text-[10px] uppercase text-slate-500 font-black tracking-widest">Goal</p>
-                          <p className="text-xl font-black text-white/40">{c.goal} ETH</p>
-                        </div>
-                      </div>
-
-                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full transition-all duration-1000"
-                          style={{ width: `${Math.min(c.progress, 100)}%` }}
-                        />
-                      </div>
-
-                      <Link
-                        to={`/campaign/${c.id}`}
-                        className="block text-center py-5 bg-white/5 hover:bg-white text-white hover:text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-300 border border-white/5 mt-6"
-                      >
-                        View Project
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
         </section>
+
+        {/* --- ULTRA MINIMAL STATUS BAR FOOTER WITH SCROLL --- */}
+        <footer className="px-6 md:px-12 py-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <span className="text-xl font-black italic tracking-tighter uppercase cursor-default">
+              RAISE<span className="text-emerald-500">3</span>
+            </span>
+            <div className="w-[1px] h-3 bg-white/10"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,1)] animate-pulse"></div>
+              <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest leading-none">Protocol_Active</span>
+            </div>
+          </div>
+
+          {/* Minimal Back to Top Trigger */}
+          <button 
+            onClick={scrollToTop}
+            className="group flex flex-col items-center gap-2 hover:opacity-100 opacity-40 transition-opacity"
+          >
+            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white group-hover:text-emerald-500 transition-colors">Return_to_Top</span>
+            <div className="w-8 h-[1px] bg-white/20 group-hover:bg-emerald-500/50 transition-colors"></div>
+          </button>
+
+          <div className="text-center md:text-right">
+            <p className="text-[8px] font-mono text-white/10 uppercase tracking-tighter">
+              {FUNDME_ADDRESS}
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );

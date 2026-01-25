@@ -209,7 +209,14 @@ const Home = () => {
                         <div className="relative h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <motion.div initial={{ width: 0 }} whileInView={{ width: `${Math.min(c.progress, 100)}%` }} transition={{ duration: 1.2, ease: "circOut" }} className="absolute h-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]" />
                         </div>
-                        <Link to={`/campaign/${c.id}`} className="block w-full text-center py-4 bg-[#F5F5F5] text-black font-black uppercase text-[10px] tracking-widest rounded-2xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 hover:bg-emerald-500">View Contract</Link>
+                        
+                        {/* UPDATED BUTTON: Removed opacity-0 and translate-y-4 to make it visible on mobile/default */}
+                        <Link 
+                          to={`/campaign/${c.id}`} 
+                          className="block w-full text-center py-4 bg-[#F5F5F5] text-black font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all duration-300 hover:bg-emerald-500 active:scale-95"
+                        >
+                          View Contract
+                        </Link>
                       </div>
                     </div>
                   </div>
